@@ -1,10 +1,9 @@
 import { Colors } from '@/constants/Colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -35,72 +34,52 @@ const PlantITDarkTheme = {
   },
 };
 
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null);
   
-  const [loaded] = useFonts({
-    Inter: require('../assets/fonts/Inter-Regular.ttf'),
-    'Inter-Medium': require('../assets/fonts/Inter-Medium.ttf'),
-    'Inter-SemiBold': require('../assets/fonts/Inter-SemiBold.ttf'),
-    'Inter-Bold': require('../assets/fonts/Inter-Bold.ttf'),
-  });
+  const [fontsLoaded, fontError] = useFonts({
+  'Inter-Regular': require('../assets/fonts/Inter_18pt-Regular.ttf'),
+  'Inter-Medium': require('../assets/fonts/Inter_18pt-Medium.ttf'),
+  'Inter-SemiBold': require('../assets/fonts/Inter_18pt-SemiBold.ttf'),
+  'Inter-Bold': require('../assets/fonts/Inter_18pt-Bold.ttf'),
+});
 
   useEffect(() => {
-    checkOnboarding();
-  }, []);
-
-  useEffect(() => {
-    if (loaded && isOnboarded !== null) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, isOnboarded]);
+  }, [fontsLoaded, fontError]);
 
-  const checkOnboarding = async () => {
-    try {
-      const value = await AsyncStorage.getItem('onboarded');
-      setIsOnboarded(value === 'true');
-    } catch {
-      setIsOnboarded(false);
-    }
-  };
-
-  if (!loaded || isOnboarded === null) {
+  if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? PlantITDarkTheme : PlantITLightTheme}>
       <Stack screenOptions={{ headerShown: false }}>
-        {!isOnboarded ? (
-          <Stack.Screen name="onboarding" />
-        ) : (
-          <>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen 
-              name="plant/[id]" 
-              options={{ 
-                presentation: 'card',
-                animation: 'slide_from_right',
-              }} 
-            />
-            <Stack.Screen 
-              name="scan-results" 
-              options={{ 
-                presentation: 'modal',
-                animation: 'slide_from_bottom',
-              }} 
-            />
-            <Stack.Screen 
-              name="chat" 
-              options={{ 
-                presentation: 'modal',
-                animation: 'slide_from_bottom',
-              }} 
-            />
-            <Stack.Screen name="recommendations" />
-          </>
-        )}
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen 
+          name="plant/[id]" 
+          options={{ 
+            presentation: 'card',
+            animation: 'slide_from_right',
+          }} 
+        />
+        <Stack.Screen 
+          name="scan-results" 
+          options={{ 
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }} 
+        />
+        <Stack.Screen 
+          name="chat" 
+          options={{ 
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }} 
+        />
       </Stack>
     </ThemeProvider>
   );
