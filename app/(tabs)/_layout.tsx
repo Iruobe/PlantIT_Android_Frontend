@@ -1,71 +1,127 @@
-import React from 'react';
-import { SymbolView } from 'expo-symbols';
-import { Link, Tabs } from 'expo-router';
-import { Platform, Pressable } from 'react-native';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import FloatingChatButton from '@/components/FloatingChatButton';
+import { Colors } from '@/constants/Colors';
+import { BorderRadius } from '@/constants/Spacing';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { Tabs } from 'expo-router';
+import { Platform, StyleSheet, useColorScheme, View } from 'react-native';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
+    <View style={{ flex: 1 }}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: colors.tint,
+          tabBarInactiveTintColor: colors.tabIconDefault,
+          tabBarStyle: {
+            position: 'absolute',
+            backgroundColor: Platform.OS === 'ios' 
+              ? 'transparent' 
+              : colorScheme === 'dark' ? Colors.dark.surface : Colors.light.surface,
+            borderTopColor: colors.border,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            height: 64 + (Platform.OS === 'ios' ? 20 : 0),
+            paddingTop: 8,
+            paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          },
+          tabBarBackground: () => (
+            Platform.OS === 'ios' ? (
+              <BlurView 
+                intensity={80} 
+                style={StyleSheet.absoluteFill}
+                tint={colorScheme === 'dark' ? 'dark' : 'light'}
+              />
+            ) : null
           ),
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable style={{ marginRight: 15 }}>
-                {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: 'info.circle', android: 'info', web: 'info' }}
-                    size={25}
-                    tintColor={Colors[colorScheme].text}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+          },
         }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons 
+                name={focused ? 'home' : 'home-outline'} 
+                size={24} 
+                color={color} 
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="scan"
+          options={{
+            title: 'Scan',
+            tabBarIcon: ({ color, focused }) => (
+              <View style={[
+                styles.scanButton,
+                { backgroundColor: focused ? Colors.primary : colors.surfaceSecondary }
+              ]}>
+                <Ionicons 
+                  name="camera" 
+                  size={24} 
+                  color={focused ? '#FFFFFF' : color} 
+                />
+              </View>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="plants"
+          options={{
+            title: 'My Plants',
+            tabBarIcon: ({ color, focused }) => (
+              <MaterialCommunityIcons 
+                name={focused ? 'flower' : 'flower-outline'} 
+                size={24} 
+                color={color} 
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: 'Settings',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons 
+                name={focused ? 'settings' : 'settings-outline'} 
+                size={24} 
+                color={color} 
+              />
+            ),
+          }}
+        />
+      </Tabs>
+      
+      {/* Floating Chat Button - appears on all tab screens */}
+      <FloatingChatButton />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  scanButton: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+});
