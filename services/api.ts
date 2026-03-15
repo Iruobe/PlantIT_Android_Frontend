@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 
 //TO DO : Update when deployed
 //Dev and Production URLs
-const DEV_API_URL = '192.168.0.43'; // Personal IP
+const DEV_API_URL = 'http://192.168.0.43:8000'; // Personal IP
 const PROD_API_URL = 'https://your-production-url.com'; 
 
 const API_BASE_URL = __DEV__ ? DEV_API_URL : PROD_API_URL;
