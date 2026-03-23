@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "571953829875",
+    "project_id": "plant-it-2bb85",
+    "storage_bucket": "plant-it-2bb85.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:571953829875:android:cedcbadde70f24c6aba486",
+        "android_client_info": {
+          "package_name": "com.plantit.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "571953829875-ac5dke3cn14vrgr5qmbjcbhh88l9jt6o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAs2vnDZlMgI69EhU5pNFjgtDzNqJrzg28"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "571953829875-ac5dke3cn14vrgr5qmbjcbhh88l9jt6o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
