@@ -38,19 +38,24 @@ export default function LoginScreen() {
       setLoading(true);
       await login(email.trim(), password);
       router.replace('/(tabs)');
+    // } catch (error: any) {
+    //   let message = 'Login failed. Please try again.';
+    //   if (error.code === 'auth/user-not-found') {
+    //     message = 'No account found with this email.';
+    //   } else if (error.code === 'auth/wrong-password') {
+    //     message = 'Incorrect password.';
+    //   } else if (error.code === 'auth/invalid-email') {
+    //     message = 'Invalid email address.';
+    //   } else if (error.code === 'auth/invalid-credential') {
+    //     message = 'Invalid email or password.';
+    //   }
+    //   Alert.alert('Login Failed', message);} 
     } catch (error: any) {
-      let message = 'Login failed. Please try again.';
-      if (error.code === 'auth/user-not-found') {
-        message = 'No account found with this email.';
-      } else if (error.code === 'auth/wrong-password') {
-        message = 'Incorrect password.';
-      } else if (error.code === 'auth/invalid-email') {
-        message = 'Invalid email address.';
-      } else if (error.code === 'auth/invalid-credential') {
-        message = 'Invalid email or password.';
-      }
-      Alert.alert('Login Failed', message);
-    } finally {
+  console.log('Full error:', JSON.stringify(error, null, 2));
+  console.log('Error code:', error.code);
+  console.log('Error message:', error.message);
+  Alert.alert('Login Failed', error.message || 'Unknown error');
+} finally {
       setLoading(false);
     }
   };

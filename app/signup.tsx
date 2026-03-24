@@ -51,17 +51,24 @@ export default function SignupScreen() {
       setLoading(true);
       await signup(email.trim(), password, displayName.trim());
       router.replace('/(tabs)');
+    // } catch (error: any) {
+    //   let message = 'Signup failed. Please try again.';
+    //   if (error.code === 'auth/email-already-in-use') {
+    //     message = 'An account with this email already exists.';
+    //   } else if (error.code === 'auth/invalid-email') {
+    //     message = 'Invalid email address.';
+    //   } else if (error.code === 'auth/weak-password') {
+    //     message = 'Password is too weak.';
+    //   }
+    //   Alert.alert('Signup Failed', message);
+    // } 
     } catch (error: any) {
-      let message = 'Signup failed. Please try again.';
-      if (error.code === 'auth/email-already-in-use') {
-        message = 'An account with this email already exists.';
-      } else if (error.code === 'auth/invalid-email') {
-        message = 'Invalid email address.';
-      } else if (error.code === 'auth/weak-password') {
-        message = 'Password is too weak.';
-      }
-      Alert.alert('Signup Failed', message);
-    } finally {
+  console.log('Full error:', JSON.stringify(error, null, 2));
+  console.log('Error code:', error.code);
+  console.log('Error message:', error.message);
+  Alert.alert('Login Failed', error.message || 'Unknown error');
+}
+    finally {
       setLoading(false);
     }
   };

@@ -1,4 +1,4 @@
-import * as Location from 'expo-location';
+import { auth } from "./firebase";
 
 //TO DO : Update when deployed
 //Dev and Production URLs
@@ -7,9 +7,10 @@ const PROD_API_URL = 'https://your-production-url.com';
 
 const API_BASE_URL = __DEV__ ? DEV_API_URL : PROD_API_URL;
 
-// Types matching FastAPI models
+// Types matching your FastAPI models
 export interface Plant {
   plant_id: string;
+  user_id: string;
   name: string;
   species?: string;
   goal: string;
@@ -77,22 +78,36 @@ class ApiService {
     this.baseUrl = API_BASE_URL;
   }
 
+  private async getAuthToken(): Promise<string | null> {
+    const user = auth.currentUser;
+    if (!user) return null;
+    return user.getIdToken();
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // Get auth token
+    const token = await this.getAuthToken();
+    
     const config: RequestInit = {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers,
       },
     };
 
     try {
       const response = await fetch(url, config);
+      
+      if (response.status === 401) {
+        throw new Error('Unauthorized - please sign in again');
+      }
       
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
@@ -106,7 +121,7 @@ class ApiService {
     }
   }
 
-  // Health Check
+  // Health Check (no auth needed)
   async healthCheck(): Promise<{ status: string }> {
     return this.request('/health');
   }
@@ -198,22 +213,6 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(params),
     });
-  }
-
-  // Helper to get current location
-  async getCurrentLocation(): Promise<{ latitude: number; longitude: number } | null> {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return null;
-      
-      const location = await Location.getCurrentPositionAsync({});
-      return {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      };
-    } catch {
-      return null;
-    }
   }
 }
 
