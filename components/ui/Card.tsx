@@ -1,11 +1,11 @@
 import { Colors } from '@/constants/Colors';
 import { BorderRadius, Spacing } from '@/constants/Spacing';
 import React from 'react';
-import { StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   variant?: 'default' | 'elevated';
 }
 

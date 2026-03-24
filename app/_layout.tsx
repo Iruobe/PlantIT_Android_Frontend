@@ -45,10 +45,8 @@ function RootLayoutNav() {
     const inAuthGroup = segments[0] === '(tabs)';
     
     if (!user && inAuthGroup) {
-      // User is not signed in but trying to access protected route
       router.replace('/login');
     } else if (user && !inAuthGroup && segments[0] !== 'plant' && segments[0] !== 'chat' && segments[0] !== 'scan-results') {
-      // User is signed in but on auth screen
       router.replace('/(tabs)');
     }
   }, [user, loading, segments]);

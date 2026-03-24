@@ -1,12 +1,13 @@
 import { auth } from '@/services/firebase';
 import {
-    User,
-    createUserWithEmailAndPassword,
-    onAuthStateChanged,
-    sendPasswordResetEmail,
-    signInWithEmailAndPassword,
-    signOut,
-    updateProfile,
+  User,
+  createUserWithEmailAndPassword,
+  deleteUser,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
 } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -17,6 +18,7 @@ interface AuthContextType {
   signup: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   getIdToken: () => Promise<string | null>;
 }
 
@@ -52,6 +54,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await sendPasswordResetEmail(auth, email);
   };
 
+  const deleteAccount = async () => {
+    if (!user) throw new Error('No user logged in');
+    await deleteUser(user);
+  };
+
   const getIdToken = async () => {
     if (!user) return null;
     return user.getIdToken();
@@ -65,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signup, 
       logout, 
       resetPassword,
+      deleteAccount,
       getIdToken,
     }}>
       {children}

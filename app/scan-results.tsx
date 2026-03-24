@@ -9,20 +9,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    useColorScheme,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+
 
 export default function ScanResultsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ scanResult: string; plantId: string }>();
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+const colorScheme = useColorScheme();
+const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   const scanResult: ScanResult = params.scanResult 
     ? JSON.parse(params.scanResult) 

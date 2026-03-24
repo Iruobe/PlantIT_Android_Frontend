@@ -6,16 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -30,8 +30,8 @@ export default function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ plantId?: string }>();
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+const colorScheme = useColorScheme();
+const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
   const flatListRef = useRef<FlatList>(null);
   
   const [messages, setMessages] = useState<Message[]>([

@@ -3,24 +3,25 @@ import PlantCard from '@/components/ui/PlantCard';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
+import { useAuth } from '@/contexts/AuthContext';
+import { api, Plant } from '@/services/api';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   useColorScheme,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Memoized components for performance
-const StatCard = React.memo(({ icon, value, label, color }: any) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
-  
+const StatCard = React.memo(({ icon, value, label, color, colors }: any) => {
   return (
     <Card style={styles.statCard} variant="elevated">
       <MaterialCommunityIcons name={icon} size={24} color={color} />
@@ -30,10 +31,7 @@ const StatCard = React.memo(({ icon, value, label, color }: any) => {
   );
 });
 
-const TaskItem = React.memo(({ task, onToggle }: any) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
-  
+const TaskItem = React.memo(({ task, colors }: any) => {
   return (
     <Card style={[styles.taskItem, task.completed && styles.taskCompleted]}>
       <Ionicons 
@@ -64,34 +62,79 @@ const TaskItem = React.memo(({ task, onToggle }: any) => {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const { user } = useAuth();
+  
+  const [plants, setPlants] = useState<Plant[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Mock data - replace with API calls
-  const plants = [
-    { id: '1', name: 'Monstera', location: 'Living Room', healthScore: 95, imageUrl: 'https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=300' },
-    { id: '2', name: 'Fiddle Leaf', location: 'Bedroom', healthScore: 72, imageUrl: 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=300' },
-    { id: '3', name: 'Snake Plant', location: 'Hallway', healthScore: 88, imageUrl: 'https://images.unsplash.com/photo-1593482892290-f54927ae1bb6?w=300' },
-  ];
+  useFocusEffect(
+    useCallback(() => {
+      fetchPlants();
+    }, [])
+  );
 
-  const tasks = [
-    { id: '1', title: 'Water Monstera', subtitle: 'Today • 500ml', icon: 'water', completed: false },
-    { id: '2', title: 'Rotate Fiddle Leaf', subtitle: 'Today • 90° Clockwise', icon: 'rotate-right', completed: false },
-    { id: '3', title: 'Mist Ferns', subtitle: 'Completed at 8:15 AM', icon: 'weather-fog', completed: true },
-  ];
+  const fetchPlants = async () => {
+    try {
+      const data = await api.getPlants();
+      setPlants(data);
+    } catch (error) {
+      console.error('Failed to fetch plants:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // Fetch data here
-    setTimeout(() => setRefreshing(false), 1000);
+    await fetchPlants();
+    setRefreshing(false);
   }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return 'Morning';
+    if (hour < 18) return 'Afternoon';
+    return 'Evening';
+  };
+
+  const getFirstName = () => {
+    if (!user?.displayName) return '';
+    return user.displayName.split(' ')[0];
+  };
+
+  const totalPlants = plants.length;
+  const avgHealth = plants.length > 0 
+    ? Math.round(plants.reduce((sum, p) => sum + (p.health_score ?? 0), 0) / plants.length)
+    : 0;
+  const plantsNeedingCare = plants.filter(p => (p.health_score ?? 100) < 70).length;
+
+  const tasks = plants
+    .filter(p => (p.health_score ?? 100) < 80)
+    .slice(0, 3)
+    .map((plant) => ({
+      id: plant.plant_id,
+      title: `Check ${plant.name}`,
+      subtitle: `Health: ${plant.health_score ?? 'Unknown'}%`,
+      icon: 'leaf',
+      completed: false,
+    }));
+
+  if (tasks.length === 0 && plants.length > 0) {
+    tasks.push({
+      id: 'water',
+      title: 'Water your plants',
+      subtitle: 'Check soil moisture',
+      icon: 'water',
+      completed: false,
+    });
+  }
+
+  const handleViewAll = () => {
+    router.push('/(tabs)/plants');
   };
 
   return (
@@ -110,7 +153,7 @@ export default function HomeScreen() {
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </Text>
           <Text style={[styles.greeting, { color: colors.text }]}>
-            {getGreeting()}! 🌱
+            {getGreeting()}{getFirstName() ? ` ${getFirstName()}` : ''}
           </Text>
         </View>
         <Card style={styles.weatherCard}>
@@ -128,40 +171,72 @@ export default function HomeScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.statsContainer}
       >
-        <StatCard icon="flower" value="12" label="Total Plants" color={Colors.primary} />
-        <StatCard icon="heart" value="95%" label="Avg Health" color={Colors.healthy} />
-        <StatCard icon="alert-circle" value="4" label="Tasks Due" color={Colors.warning} />
+        <StatCard icon="flower" value={totalPlants.toString()} label="Total Plants" color={Colors.primary} colors={colors} />
+        <StatCard icon="heart" value={totalPlants > 0 ? `${avgHealth}%` : '-'} label="Avg Health" color={Colors.healthy} colors={colors} />
+        <StatCard icon="alert-circle" value={plantsNeedingCare.toString()} label="Need Care" color={Colors.warning} colors={colors} />
       </ScrollView>
 
       {/* Your Plants Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Plants</Text>
-          <Text style={[styles.sectionLink, { color: Colors.primary }]}>View All</Text>
+          <TouchableOpacity onPress={handleViewAll}>
+            <Text style={[styles.sectionLink, { color: Colors.primary }]}>View All</Text>
+          </TouchableOpacity>
         </View>
-        <FlatList
-          horizontal
-          data={plants}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.plantCardWrapper}>
-              <PlantCard {...item} variant="grid" />
-            </View>
-          )}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.plantsScroll}
-        />
+        
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={Colors.primary} />
+          </View>
+        ) : plants.length > 0 ? (
+          <FlatList
+            horizontal
+            data={plants.slice(0, 5)}
+            keyExtractor={(item) => item.plant_id}
+            renderItem={({ item }) => (
+              <View style={styles.plantCardWrapper}>
+                <PlantCard 
+                  id={item.plant_id}
+                  name={item.name}
+                  species={item.species}
+                  location={item.location}
+                  imageUrl={item.image_url}
+                  healthScore={item.health_score}
+                  variant="grid" 
+                />
+              </View>
+            )}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.plantsScroll}
+          />
+        ) : (
+          <Card style={styles.emptyCard}>
+            <Ionicons name="leaf-outline" size={40} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              No plants yet. Scan your first plant!
+            </Text>
+            <TouchableOpacity 
+              style={styles.emptyButton}
+              onPress={() => router.push('/(tabs)/scan')}
+            >
+              <Text style={styles.emptyButtonText}>Scan Plant</Text>
+            </TouchableOpacity>
+          </Card>
+        )}
       </View>
 
       {/* Care Tasks Section */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Care Tasks</Text>
-        <View style={styles.tasksList}>
-          {tasks.map((task) => (
-            <TaskItem key={task.id} task={task} />
-          ))}
+      {tasks.length > 0 && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Care Tasks</Text>
+          <View style={styles.tasksList}>
+            {tasks.map((task) => (
+              <TaskItem key={task.id} task={task} colors={colors} />
+            ))}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Tips Section */}
       <View style={styles.section}>
@@ -169,7 +244,7 @@ export default function HomeScreen() {
           <View style={styles.tipContent}>
             <Text style={styles.tipTitle}>Pro Tip: Lighting</Text>
             <Text style={styles.tipText}>
-              Your Fiddle Leaf Fig loves bright, indirect sunlight. Try moving it closer to the window as winter approaches.
+              Most houseplants thrive in bright, indirect sunlight. Rotate them regularly for even growth.
             </Text>
             <Text style={styles.tipLink}>Learn More</Text>
           </View>
@@ -213,7 +288,7 @@ const styles = StyleSheet.create({
   },
   temp: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
   },
   humidity: {
     ...Typography.caption,
@@ -250,7 +325,7 @@ const styles = StyleSheet.create({
   },
   sectionLink: {
     ...Typography.bodySmall,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   plantsScroll: {
     paddingRight: Spacing.md,
@@ -258,6 +333,31 @@ const styles = StyleSheet.create({
   plantCardWrapper: {
     width: 160,
     marginRight: Spacing.md,
+  },
+  loadingContainer: {
+    height: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyCard: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  emptyText: {
+    ...Typography.body,
+    textAlign: 'center',
+  },
+  emptyButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: 8,
+    marginTop: Spacing.sm,
+  },
+  emptyButtonText: {
+    color: '#FFFFFF',
+    ...Typography.button,
   },
   tasksList: {
     gap: Spacing.sm,
@@ -275,7 +375,7 @@ const styles = StyleSheet.create({
   },
   taskTitle: {
     ...Typography.body,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   taskTitleCompleted: {
     textDecorationLine: 'line-through',
@@ -305,7 +405,7 @@ const styles = StyleSheet.create({
   tipLink: {
     ...Typography.caption,
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     textTransform: 'uppercase',
   },
   tipIcon: {

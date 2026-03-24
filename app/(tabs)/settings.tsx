@@ -1,46 +1,15 @@
-// import { StyleSheet } from 'react-native';
-
-// import EditScreenInfo from '@/components/EditScreenInfo';
-// import { Text, View } from '@/components/Themed';
-
-// export default function TabTwoScreen() {
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>Tab Two</Text>
-//       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-//       <EditScreenInfo path="app/(tabs)/two.tsx" />
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   title: {
-//     fontSize: 20,
-//     fontWeight: 'bold',
-//   },
-//   separator: {
-//     marginVertical: 30,
-//     height: 1,
-//     width: '80%',
-//   },
-// });
-
 import Card from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius, Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
+import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import React from 'react';
 import {
   Alert,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   useColorScheme,
@@ -55,12 +24,10 @@ interface SettingItemProps {
   subtitle?: string;
   onPress?: () => void;
   rightElement?: React.ReactNode;
+  colors: typeof Colors.light;
 }
 
-const SettingItem = ({ icon, iconColor = Colors.primary, title, subtitle, onPress, rightElement }: SettingItemProps) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
-
+const SettingItem = ({ icon, iconColor = Colors.primary, title, subtitle, onPress, rightElement, colors }: SettingItemProps) => {
   return (
     <TouchableOpacity 
       style={styles.settingItem}
@@ -86,11 +53,10 @@ const SettingItem = ({ icon, iconColor = Colors.primary, title, subtitle, onPres
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
-
-  const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
-  const [notifications, setNotifications] = useState(true);
+  const { user, logout, deleteAccount } = useAuth();
 
   const handleSignOut = () => {
     Alert.alert(
@@ -98,9 +64,75 @@ export default function SettingsScreen() {
       'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: () => {} },
+        { 
+          text: 'Sign Out', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace('/login');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          },
+        },
       ]
     );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone. All your plants and data will be permanently deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive', 
+          onPress: () => {
+            Alert.alert(
+              'Final Confirmation',
+              'This will permanently delete your account and all associated data.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Forever',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await deleteAccount();
+                      router.replace('/login');
+                    } catch (error: any) {
+                      if (error.code === 'auth/requires-recent-login') {
+                        Alert.alert(
+                          'Re-authentication Required',
+                          'For security, please sign out and sign in again before deleting your account.'
+                        );
+                      } else {
+                        Alert.alert('Error', 'Failed to delete account. Please try again.');
+                      }
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const getUserDisplayName = () => {
+    return user?.displayName || user?.email?.split('@')[0] || 'User';
+  };
+
+  const getUserInitials = () => {
+    const name = getUserDisplayName();
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
   };
 
   return (
@@ -119,16 +151,30 @@ export default function SettingsScreen() {
         <Card variant="elevated" style={styles.profileCard}>
           <View style={styles.profileInfo}>
             <View style={styles.avatar}>
-              <Ionicons name="person" size={32} color={Colors.primary} />
+              <Text style={styles.avatarText}>{getUserInitials()}</Text>
             </View>
             <View style={styles.profileText}>
-              <Text style={[styles.profileName, { color: colors.text }]}>Plant Lover</Text>
-              <Text style={[styles.profileSubtitle, { color: Colors.primary }]}>Plant Enthusiast</Text>
+              <Text style={[styles.profileName, { color: colors.text }]}>{getUserDisplayName()}</Text>
+              <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.editButtonText}>Edit Profile</Text>
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
+            <Ionicons name="trash-outline" size={16} color={Colors.error} />
+            <Text style={styles.deleteButtonText}>Delete</Text>
           </TouchableOpacity>
+        </Card>
+      </View>
+
+      {/* Appearance */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance</Text>
+        <Card>
+          <SettingItem
+            icon="moon"
+            title="Dark Mode"
+            subtitle="Follows system settings"
+            colors={colors}
+          />
         </Card>
       </View>
 
@@ -141,6 +187,7 @@ export default function SettingsScreen() {
             title="Location"
             subtitle="Nottingham, UK"
             onPress={() => {}}
+            colors={colors}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <SettingItem
@@ -148,52 +195,15 @@ export default function SettingsScreen() {
             title="Measurement Units"
             subtitle="Metric (°C, cm)"
             onPress={() => {}}
+            colors={colors}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <SettingItem
-            icon="leaf"
-            title="Experience Level"
-            subtitle="Beginner"
-            onPress={() => {}}
-          />
-        </Card>
-      </View>
-
-      {/* Appearance */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance</Text>
-        <Card>
-          <SettingItem
-            icon="moon"
-            title="Dark Mode"
-            rightElement={
-              <Switch
-                value={darkMode}
-                onValueChange={setDarkMode}
-                trackColor={{ false: colors.border, true: Colors.primary }}
-                thumbColor="#FFFFFF"
-              />
-            }
-          />
-        </Card>
-      </View>
-
-      {/* Notifications */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Notifications</Text>
-        <Card>
-          <SettingItem
             icon="notifications"
-            title="Care Reminders"
-            subtitle="Daily at 9:00 AM"
-            rightElement={
-              <Switch
-                value={notifications}
-                onValueChange={setNotifications}
-                trackColor={{ false: colors.border, true: Colors.primary }}
-                thumbColor="#FFFFFF"
-              />
-            }
+            title="Notifications"
+            subtitle="Care reminders enabled"
+            onPress={() => {}}
+            colors={colors}
           />
         </Card>
       </View>
@@ -206,18 +216,21 @@ export default function SettingsScreen() {
             icon="information-circle"
             title="App Version"
             subtitle="1.0.0"
+            colors={colors}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <SettingItem
             icon="document-text"
             title="Privacy Policy"
             onPress={() => {}}
+            colors={colors}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <SettingItem
             icon="help-circle"
             title="Help & Support"
             onPress={() => {}}
+            colors={colors}
           />
         </Card>
       </View>
@@ -264,34 +277,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
+    flex: 1,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.primary + '20',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+  },
   profileText: {
-    gap: 2,
+    flex: 1,
   },
   profileName: {
     ...Typography.h3,
   },
-  profileSubtitle: {
-    ...Typography.bodySmall,
-    fontFamily: 'Inter-Medium',
+  profileEmail: {
+    ...Typography.caption,
+    marginTop: 2,
   },
-  editButton: {
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.error + '10',
     borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.error + '20',
   },
-  editButtonText: {
-    color: '#FFFFFF',
-    ...Typography.bodySmall,
+  deleteButtonText: {
+    color: Colors.error,
+    ...Typography.caption,
     fontFamily: 'Inter-SemiBold',
   },
   settingItem: {
